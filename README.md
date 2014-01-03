@@ -40,3 +40,7 @@ db.delete("table_name")	//delete table
 db.delete("table_name", {field: value})  //deletes row
 db.delete("table_name", "field_name")	//deletes col
 ```
+
+concept
+=======
+All querries and commands should go through the one method

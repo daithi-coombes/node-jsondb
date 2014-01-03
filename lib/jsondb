@@ -1,2 +1,148 @@
 #!/usr/bin/env node
 
+var fs = require('fs'),
+	flags = {
+		CONNECTING: null
+	}
+
+/**
+ * database class
+ */
+var DB = function jsondb(){
+
+	//@public
+	this.dbname = null
+	this.database = null
+	this.storage = '.'
+	this.handle = null
+
+	//@public close connection
+	this.close = function(fn){
+		this.dbname = null
+		this.database = null
+		this.storage = '.'
+		this.handle = null
+		if(fn)
+			fn()
+	}
+
+	//@public connect to database
+	this.connect = function(dbname, fn){
+
+		flags.CONNECTING = true
+		this.dbname = dbname
+		this.database = this.storage+'/'+this.dbname+'.json'
+		var _self = this
+		var _cb = fn
+
+		fs.open(this.database, 'a+', function(err, fd){
+
+			if(err)
+				throw new Error(err)
+
+			_self.handle = fd
+			flags.CONNECTING = false
+
+			if(_cb)
+				_cb()
+		})
+
+		return this
+	}
+
+	this.delete_db = function(dbname, fn){
+
+		var cb = fn,
+			self = this
+
+		//setup database filename
+		this.database = this.storage+'/'+dbname+'.json'
+		
+		fs.exists(this.database, function(exists){
+
+			var _self = self
+				_cb = cb
+				_dbname = dbname
+
+			if(exists)
+				fs.unlink(_self.database, function(err){
+					if(err)
+						throw new Error(err)
+
+					if(_self.dbname==_dbname)
+						_self.close()
+
+					if(_cb)
+						_cb()
+				})
+			else
+				if(_cb)
+					_cb()
+		})
+	}
+
+	/**
+	 * Handles all queries, does check for connection etc.
+	 * @deprecated not in use in this version
+	 */
+	this.query = function(method){
+
+		var _self = this
+		var _method = method
+		var _args = arguments
+
+		//callback to see if db exists
+		function queryCheck(ok){
+			_self[method]( _args )
+		}
+
+		//check if connected
+		if( method!="connect" )
+			this.connected(queryCheck)
+		queryCheck()
+	}
+
+	/**
+	 * Check if connected, called by this.query
+	 * @deprecated not in use in this version
+	 */
+	function connected(fn){
+		var ok = true
+		fn(ok)
+	}
+
+}
+var db = new DB()
+
+
+/**
+ * driver
+ */
+var driver = {
+
+	close: function(fn){
+		db.close(fn)
+		return this
+	},
+
+	connect: function(dbname, fn){
+		db.connect(dbname, fn)
+		return this
+	},
+
+	deleteDB: function(dbname, fn){
+		db.delete_db(dbname, fn)
+		return this
+	},
+	
+	getDB: function(){
+		return db
+	},
+
+	setStorage: function(path){
+		db.storage = path
+		return this
+	}
+}
+
+module.exports = driver
