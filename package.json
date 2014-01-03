@@ -1,0 +1,17 @@
+{
+	"name" : "jsondb",
+	"version" : "0.0.1",
+	"description" : "An, extremely, light and portable CRUD json based database",
+	"repository" : {
+		"type" : "git",
+		"url" : "http://github.com/daithi-coombes/node-jsondb"
+	},
+	"engines": {
+		"node": "0.10.x",
+		"npm":  "1.2.x"
+	},
+	"dependencies": {
+		"mocha": "*",
+		"rewire": "*"
+	}
+}
