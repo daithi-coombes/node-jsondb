@@ -1,14 +1,20 @@
 #!/usr/bin/env node
 
 var fs = require('fs'),
+	events = require('events'),
+	util = require('util'),
 	flags = {
-		CONNECTING: null
+		CONNECTING: null,
+		DELETING_DB: null
 	}
 
 /**
  * database class
  */
 var DB = function jsondb(){
+
+	events.EventEmitter.call(this)
+	var self = this
 
 	//@public
 	this.dbname = null
@@ -31,41 +37,58 @@ var DB = function jsondb(){
 
 		flags.CONNECTING = true
 		this.dbname = dbname
-		this.database = this.storage+'/'+this.dbname+'.json'
-		var _self = this
+		this.database = getDBLocation(this.dbname)
+		//var _self = this
 		var _cb = fn
+		var _db = this.database
+		var _dbname = dbname
 
-		fs.open(this.database, 'a+', function(err, fd){
+		//check database file
+		var exists = fs.existsSync(_db)
 
-			if(err)
-				throw new Error(err)
-
-			_self.handle = fd
-			flags.CONNECTING = false
-
-			if(_cb)
-				_cb()
-		})
+		if(!exists){
+			
+			var json = {
+				dbname: _dbname,
+				tables: {}
+			}
+			var str = JSON.stringify(json, null, 4)
+			fs.writeFileSync(_db, str)
+		}
+		if(_cb){
+			_cb()
+		}
 
 		return this
+	}
+
+	//@public create a table
+	this.create = function(tblname, fn){
+
+		var json = getJSON()
+		json.tables[tblname] = []
+		setJSON(json, fn)
 	}
 
 	this.delete_db = function(dbname, fn){
 
 		var cb = fn,
 			self = this
+			_db = getDBLocation(dbname)
+
+		flags.DELETING_DB = true
 
 		//setup database filename
-		this.database = this.storage+'/'+dbname+'.json'
-		
+		this.database = _db
+
 		fs.exists(this.database, function(exists){
 
 			var _self = self
 				_cb = cb
 				_dbname = dbname
 
-			if(exists)
-				fs.unlink(_self.database, function(err){
+			if(exists){
+				fs.unlink(_db, function(err){
 					if(err)
 						throw new Error(err)
 
@@ -75,6 +98,7 @@ var DB = function jsondb(){
 					if(_cb)
 						_cb()
 				})
+			}
 			else
 				if(_cb)
 					_cb()
@@ -105,13 +129,47 @@ var DB = function jsondb(){
 	/**
 	 * Check if connected, called by this.query
 	 * @deprecated not in use in this version
+	 * @private
 	 */
 	function connected(fn){
 		var ok = true
 		fn(ok)
 	}
 
+	/**
+	 * Get the full path to the a database. Uses current storage
+	 * @private
+	 * @param  {string} dbname Required. Database name
+	 * @return {string}        
+	 */
+	function getDBLocation(dbname){
+
+		return process.cwd()+'/'+db.storage+'/'+dbname+'.json'
+	}
+
+	/**
+	 * Get the current json object from database file
+	 * @private
+	 */
+	function getJSON(){
+
+		return require(db.database)
+	}
+
+	function setJSON(json, fn){
+
+		var _json = JSON.stringify(json, null, 4),
+			_cb = fn
+
+		fs.writeFile(db.database, _json, {flag: 'w'}, function(err){
+			if(err)
+				throw new Error(err)
+			if(_cb)
+				_cb()
+		})
+	}
 }
+util.inherits(DB, events.EventEmitter)
 var db = new DB()
 
 
@@ -127,6 +185,11 @@ var driver = {
 
 	connect: function(dbname, fn){
 		db.connect(dbname, fn)
+		return this
+	},
+
+	create: function(tblname, fn){
+		db.create(tblname, fn)
 		return this
 	},
 

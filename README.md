@@ -19,7 +19,7 @@ db = require('jsondb').connect('my_database')
 
 //To change db file location
 db = require('jsondb')
-db.storage('/path/to/file')
+db.getDB().storage('/path/to/file')
 db.connect('my_database')
 
 //create

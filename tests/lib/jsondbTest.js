@@ -1,10 +1,12 @@
 
-var fs = require('fs'),
+var assert = require('assert'),
+	fs = require('fs'),
 	rewire = require('rewire'),
 	database,
 	db,
 	dbname,
-	storage
+	storage,
+	tblname
 
 describe('jsondb: ', function(){
 
@@ -13,14 +15,16 @@ describe('jsondb: ', function(){
 		db = require(process.cwd()+'/lib/jsondb')
 		dbname = 'my_database'
 		storage = './tests'
+		tblname = 'foo_table'
 		database = storage+'/'+dbname+'.json'
 
 		db.setStorage(storage)
 	})
 
 	afterEach(function(){
-		fs.exists(database, function(){
-			db.deleteDB(dbname)
+		fs.exists(database, function(exists){
+			if(exists)
+				db.deleteDB(dbname)
 		})
 	})
 
@@ -45,8 +49,10 @@ describe('jsondb: ', function(){
 			db.close()
 				.setStorage(storage)
 				.connect(dbname, function(){
-					if(db.getDB().handle)
-						done()
+					fs.exists(database, function(exists){
+						if(exists)
+							done()
+					})
 				})
 		})
 	})
@@ -66,5 +72,25 @@ describe('jsondb: ', function(){
 				})
 			})
 		})		
+	})
+
+	it('Should create table', function(done){
+
+		db.connect(dbname)
+			.create(tblname, function(){
+				
+				fs.readFile(database, {encoding:'UTF8'}, function(err, data){
+
+					var j = JSON.parse(data)
+					assert.deepEqual(j, {
+						    "dbname": "my_database",
+						    "tables": {
+						        "foo_table": []
+						    }
+						}
+					)
+					done()
+				})
+			})
 	})
 })
