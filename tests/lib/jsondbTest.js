@@ -10,7 +10,7 @@ var assert = require('assert'),
 
 describe('jsondb: ', function(){
 
-	beforeEach(function(){
+	beforeEach(function(done){
 
 		db = require(process.cwd()+'/lib/jsondb')
 		dbname = 'my_database'
@@ -18,54 +18,50 @@ describe('jsondb: ', function(){
 		tblname = 'foo_table'
 		database = storage+'/'+dbname+'.json'
 
-		db.setStorage(storage).run()
-	})
-
-	afterEach(function(){
-		fs.exists(database, function(exists){
-			if(exists)
-				db.delete('database', dbname)
+		db.setStorage(storage, function(){
+			done()
 		})
 	})
 
-	
+	afterEach(function(done){
+		fs.exists(database, function(exists){
+			if(exists)
+				db.delete('database', dbname, function(){
+					done()
+				})
+			else
+				done()
+		})
+	})
+
 	it('Should create new database', function(done){
 
 		db.connect(dbname, function(){
-			
+
 			fs.readFile(database, function(err, data){
 				var j = JSON.parse(data)
 				assert.equal(j.dbname, dbname)
 				done()
 			})
-		}).run()
+		})
 
 	})
 
-	/**
 	it('Should connect to created database', function(done){
 		
 		//create db
 		db.connect(dbname, function(){
-				console.log('1st connect')
-			})
-			//create db
-			.close(function(){
-				console.log('closing connection')
-				done()
-			}).run()	//reset connection
-			/**
-			.setStorage(storage, function(){
-				console.log('setting storage')
-			})
-			.connect(dbname, function(){
-
-				console.log('Final callback')
-				fs.exists(database, function(exists){
-					if(exists)
-						done()
+			db.close(function(){
+				db.setStorage(storage, function(){
+					db.connect(dbname, function(){
+						fs.exists(database, function(exists){
+							if(exists)
+								done()
+						})
+					})
 				})
-			}).run()
+			})
+		})
 	})
 
 	it('Should delete database', function(done){
@@ -78,8 +74,6 @@ describe('jsondb: ', function(){
 				fs.exists(database, function(exists){
 					if(!exists)
 						done()
-					else
-						console.log('exists: '+database)
 				})
 			})
 		})		
@@ -88,7 +82,7 @@ describe('jsondb: ', function(){
 	it('Should create and delete table', function(done){
 
 		db.connect(dbname)
-			.create(tblname, function(){
+			.create('table', tblname, function(){
 				
 				fs.readFile(database, {encoding:'UTF8'}, function(err, data){
 
@@ -96,7 +90,10 @@ describe('jsondb: ', function(){
 					assert.deepEqual(j, {
 						    "dbname": "my_database",
 						    "tables": {
-						        "foo_table": []
+						        "foo_table": {
+						        	fields: [],
+						        	data: []
+						        }
 						    }
 						}
 					)
@@ -119,14 +116,31 @@ describe('jsondb: ', function(){
 
 	it('Should add and delete fields', function(done){
 
-		var field = 'foo-field',
-			value = 'bar'
+		var field = 'foo_field'
 
-		db.connect(dbname)
-			.update(tblname, {field: value}, function(){
-				console.log(db.getDB())
-				done()
+		var foo = db.connect(dbname)
+			.create('table', tblname, function(){
+
+				//add field
+				db.create('field', {table:tblname, field:field}, function(){
+				
+					fs.readFile(database, function(err, data){
+
+						var j = JSON.parse(data)
+						assert.equal(j.tables[tblname].fields[0], field)
+
+						//delete field
+						db.delete('field', {table:tblname, field:field}, function(){
+
+							fs.readFile(database, function(err, data){
+
+								var j = JSON.parse(data)
+								assert.deepEqual(j.tables[tblname].fields, [null])
+								done()
+							})
+						})
+					})
+				})
 			})
 	})
-	*/
 })

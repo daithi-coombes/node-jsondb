@@ -32,7 +32,7 @@ var DB = function jsondb(){
 		this.handle = null
 		if(fn)
 			fn()
-		return self
+		return this
 	}
 
 	//@public connect to database
@@ -64,11 +64,26 @@ var DB = function jsondb(){
 	}
 
 	//@public create a table
-	this.create = function(tblname, fn){
+	this.create = function(what, tblname, fn){
 
-		var json = getJSON()
-		json.tables[tblname] = []
-		setJSON(json, fn)
+		var json = this.getJSON()
+
+		switch(what){
+
+			case 'field':
+				if(json.tables[tblname.table].fields.indexOf(tblname.field)>=0)
+					return this
+				else
+					json.tables[tblname.table].fields.push(tblname.field)
+				break;
+
+			case 'table':
+				json.tables[tblname] = {fields: [], data: []}
+				break;
+		}
+
+		this.setJSON(json, fn)
+		return this
 	}
 
 	this.delete_db = function(dbname, fn){
@@ -106,11 +121,22 @@ var DB = function jsondb(){
 		})
 	}
 
+	this.delete_field = function(tblname, field, fn){
+
+		var j = this.getJSON()
+		var index = j.tables[tblname].fields.indexOf(field)
+
+		delete j.tables[tblname].fields[index]
+		this.setJSON(j, fn)
+
+		return this
+	}
+
 	this.delete_table = function(tblname, fn){
 
-		var j = getJSON()
+		var j = this.getJSON()
 		delete j.tables[tblname]
-		setJSON(j, fn)
+		this.setJSON(j, fn)
 	}
 
 	this.setStorage = function(path, fn){
@@ -124,18 +150,22 @@ var DB = function jsondb(){
 
 	this.update = function(tblname, data, fn){
 
-		var j = getJSON()
-		var cb = fn
-		
-		function pushData(){
-			j.tables[tblname].push(data)
-			setJSON(j, cb)
-		}
-		
+		var j = this.getJSON()
+
 		if(!j.tables[tblname])
-			this.create(tblname, pushData)
+			throw new Error('Unkown table: '+tblname)
+
+		//if data is string, then add new field
+		if(typeof(data)=='string')
+			j.tables[tblname].fields.push(data)
 		else
-			pushData()
+			//else add new row
+			j.tables[tblname].push(data)
+		this.setJSON(j, cb)
+
+		if(fn)
+			fn()
+		return this
 	}
 
 	/**
@@ -184,22 +214,17 @@ var DB = function jsondb(){
 	 * Get the current json object from database file
 	 * @private
 	 */
-	function getJSON(){
-
+	this.getJSON = function(){
 		return require(db.database)
 	}
 
-	function setJSON(json, fn){
+	function pushData(tblname, data){
+	}
+	
+	this.setJSON = function(json, fn){
 
-		var _json = JSON.stringify(json, null, 4),
-			_cb = fn
-
-		fs.writeFile(db.database, _json, {flag: 'w'}, function(err){
-			if(err)
-				throw new Error(err)
-			if(_cb)
-				_cb()
-		})
+		var _json = JSON.stringify(json, null, 4)
+		fs.writeFile(db.database, _json, {flag: 'w'}, fn)
 	}
 
 }
@@ -213,17 +238,20 @@ var queue = []
 var driver = {
 
 	close: function(fn){
-		queue.push(db.close.bind(db, fn))
+		db.close(fn)
+		//queue.push(db.close.bind(db, fn))
 		return this
 	},
 
 	connect: function(dbname, fn){
-		queue.push(db.connect.bind(db, dbname, fn))
+		db.connect(dbname, fn)
+		//queue.push(db.connect.bind(db, dbname, fn))
 		return this
 	},
 
-	create: function(tblname, fn){
-		db.create(tblname, fn)
+	create: function(what, tblname, fn){
+
+		db.create(what, tblname, fn)
 		return this
 	},
 
@@ -238,6 +266,10 @@ var driver = {
 			case 'table':
 				db.delete_table(val, fn)
 				break;
+
+			case 'field':
+				db.delete_field(val.table, val.field, fn)
+				break;
 		}
 	},
 	
@@ -247,24 +279,24 @@ var driver = {
 	},
 
 	update: function(tblname, data, fn){
+		
 		db.update(tblname, data, fn)
 		return this
 	},
 
 	run: function(){
 		
-		console.log(queue)
 	    async.series(queue, function(err, results){
 	    	if(err)
 	    		throw new Error(err)
-	    	console.log('this is the callback')
 	    })
 
 		return null
 	},
 
 	setStorage: function(path, fn){
-		queue.push(db.setStorage.bind(db, path, fn))
+		db.setStorage(path, fn)
+		//queue.push(db.setStorage.bind(db, path, fn))
 		return this
 	}
 }
