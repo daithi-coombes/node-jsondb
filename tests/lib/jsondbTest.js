@@ -18,43 +18,54 @@ describe('jsondb: ', function(){
 		tblname = 'foo_table'
 		database = storage+'/'+dbname+'.json'
 
-		db.setStorage(storage)
+		db.setStorage(storage).run()
 	})
 
 	afterEach(function(){
 		fs.exists(database, function(exists){
 			if(exists)
-				db.deleteDB(dbname)
+				db.delete('database', dbname)
 		})
 	})
 
+	
 	it('Should create new database', function(done){
 
 		db.connect(dbname, function(){
-
-			//check file exists
-			fs.exists(database, function(exists){
-				if(exists)
-					done()
+			
+			fs.readFile(database, function(err, data){
+				var j = JSON.parse(data)
+				assert.equal(j.dbname, dbname)
+				done()
 			})
-		})
+		}).run()
 
 	})
 
+	/**
 	it('Should connect to created database', function(done){
 		
 		//create db
 		db.connect(dbname, function(){
+				console.log('1st connect')
+			})
+			//create db
+			.close(function(){
+				console.log('closing connection')
+				done()
+			}).run()	//reset connection
+			/**
+			.setStorage(storage, function(){
+				console.log('setting storage')
+			})
+			.connect(dbname, function(){
 
-			db.close()
-				.setStorage(storage)
-				.connect(dbname, function(){
-					fs.exists(database, function(exists){
-						if(exists)
-							done()
-					})
+				console.log('Final callback')
+				fs.exists(database, function(exists){
+					if(exists)
+						done()
 				})
-		})
+			}).run()
 	})
 
 	it('Should delete database', function(done){
@@ -62,7 +73,7 @@ describe('jsondb: ', function(){
 		db.connect(dbname, function(){
 
 			db.setStorage(storage)
-			db.deleteDB(dbname, function(){
+			db.delete('database', dbname, function(){
 
 				fs.exists(database, function(exists){
 					if(!exists)
@@ -74,7 +85,7 @@ describe('jsondb: ', function(){
 		})		
 	})
 
-	it('Should create table', function(done){
+	it('Should create and delete table', function(done){
 
 		db.connect(dbname)
 			.create(tblname, function(){
@@ -89,8 +100,33 @@ describe('jsondb: ', function(){
 						    }
 						}
 					)
-					done()
+
+					db.delete('table', tblname, function(){
+						fs.readFile(database, {encoding:'UTF8'}, function(err, data){
+
+							var j = JSON.parse(data)
+							assert.deepEqual(j, {
+								    "dbname": "my_database",
+								    "tables": {}
+								}
+							)
+							done()
+						})
+					})
 				})
 			})
 	})
+
+	it('Should add and delete fields', function(done){
+
+		var field = 'foo-field',
+			value = 'bar'
+
+		db.connect(dbname)
+			.update(tblname, {field: value}, function(){
+				console.log(db.getDB())
+				done()
+			})
+	})
+	*/
 })

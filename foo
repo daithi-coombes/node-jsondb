@@ -1,0 +1,88 @@
+#!/usr/bin/env node
+
+
+/**
+ * Start Module
+ */
+//includes
+var fs = require('fs'),
+  async = require('async')
+
+
+/**
+ * Main class
+ */
+var foo = function(){
+
+	this.method1 = function(fn){
+		console.log('method1 called')
+    fn()
+		return this
+	}
+
+	this.method2 = function(str, fn){
+		fs.readFile('./lib/jsondb', function(){
+			console.log('method2 called: str='+str)
+      fn()
+		})
+		return this
+	}
+
+	this.method3 = function(fn){
+		console.log('method3 called')
+    fn()
+		return this
+	}
+}
+
+/**
+ * Front facing methods
+ */
+var obj = {
+
+  "setup" : function(){
+    console.log('Setup is called')
+    return this
+  },
+
+	"one" : function(){
+    queue.push(o.method1)
+		return this
+	},
+
+	"two" : function(str){
+    queue.push(o.method2.bind(o, str))
+		return this
+	},
+
+	"three" : function(){
+		queue.push(o.method3)
+		return this
+	},
+
+  "run" : function(){
+    async.series(queue, function(err, results){
+      console.log('this is the callback')
+    })
+    return null
+  }
+}
+
+//construct objects
+var o = new foo()
+var queue = []
+module.exports = obj
+/**
+ * End Module
+ */
+
+
+/**
+ * User interaction of the module
+ */
+obj.setup()
+  .one()
+  .two('random str')
+  .three()
+  .run()
+

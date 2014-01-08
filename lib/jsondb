@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-var fs = require('fs'),
+var async = require('async'),
+	fs = require('fs'),
 	events = require('events'),
 	util = require('util'),
 	flags = {
@@ -24,41 +25,41 @@ var DB = function jsondb(){
 
 	//@public close connection
 	this.close = function(fn){
+
 		this.dbname = null
 		this.database = null
 		this.storage = '.'
 		this.handle = null
 		if(fn)
 			fn()
+		return self
 	}
 
 	//@public connect to database
 	this.connect = function(dbname, fn){
 
 		flags.CONNECTING = true
-		this.dbname = dbname
-		this.database = getDBLocation(this.dbname)
-		//var _self = this
-		var _cb = fn
-		var _db = this.database
+		self.dbname = dbname
+		self.database = getDBLocation(this.dbname)
+		var _db = self.database
 		var _dbname = dbname
 
 		//check database file
 		var exists = fs.existsSync(_db)
 
 		if(!exists){
-			
+						
 			var json = {
 				dbname: _dbname,
 				tables: {}
 			}
 			var str = JSON.stringify(json, null, 4)
 			fs.writeFileSync(_db, str)
-		}
-		if(_cb){
-			_cb()
-		}
 
+		}
+		if(fn){
+			fn()
+		}
 		return this
 	}
 
@@ -103,6 +104,38 @@ var DB = function jsondb(){
 				if(_cb)
 					_cb()
 		})
+	}
+
+	this.delete_table = function(tblname, fn){
+
+		var j = getJSON()
+		delete j.tables[tblname]
+		setJSON(j, fn)
+	}
+
+	this.setStorage = function(path, fn){
+
+		self.storage = path
+
+		if(fn)
+			fn()
+		return this
+	}
+
+	this.update = function(tblname, data, fn){
+
+		var j = getJSON()
+		var cb = fn
+		
+		function pushData(){
+			j.tables[tblname].push(data)
+			setJSON(j, cb)
+		}
+		
+		if(!j.tables[tblname])
+			this.create(tblname, pushData)
+		else
+			pushData()
 	}
 
 	/**
@@ -168,10 +201,11 @@ var DB = function jsondb(){
 				_cb()
 		})
 	}
+
 }
 util.inherits(DB, events.EventEmitter)
 var db = new DB()
-
+var queue = []
 
 /**
  * driver
@@ -179,12 +213,12 @@ var db = new DB()
 var driver = {
 
 	close: function(fn){
-		db.close(fn)
+		queue.push(db.close.bind(db, fn))
 		return this
 	},
 
 	connect: function(dbname, fn){
-		db.connect(dbname, fn)
+		queue.push(db.connect.bind(db, dbname, fn))
 		return this
 	},
 
@@ -193,17 +227,44 @@ var driver = {
 		return this
 	},
 
-	deleteDB: function(dbname, fn){
-		db.delete_db(dbname, fn)
-		return this
+	delete: function(what, val, fn){
+
+		switch(what){
+
+			case 'database':
+				db.delete_db(val, fn)
+				break;
+
+			case 'table':
+				db.delete_table(val, fn)
+				break;
+		}
 	},
 	
 	getDB: function(){
+		
 		return db
 	},
 
-	setStorage: function(path){
-		db.storage = path
+	update: function(tblname, data, fn){
+		db.update(tblname, data, fn)
+		return this
+	},
+
+	run: function(){
+		
+		console.log(queue)
+	    async.series(queue, function(err, results){
+	    	if(err)
+	    		throw new Error(err)
+	    	console.log('this is the callback')
+	    })
+
+		return null
+	},
+
+	setStorage: function(path, fn){
+		queue.push(db.setStorage.bind(db, path, fn))
 		return this
 	}
 }
