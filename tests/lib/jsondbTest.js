@@ -24,6 +24,7 @@ describe('jsondb: ', function(){
 	})
 
 	afterEach(function(done){
+
 		fs.exists(database, function(exists){
 			if(exists)
 				db.delete('database', dbname, function(){
@@ -113,34 +114,50 @@ describe('jsondb: ', function(){
 				})
 			})
 	})
-
+	
 	it('Should add and delete fields', function(done){
 
 		var field = 'foo_field'
 
-		var foo = db.connect(dbname)
+		db.connect(dbname)
 			.create('table', tblname, function(){
-
-				//add field
-				db.create('field', {table:tblname, field:field}, function(){
 				
-					fs.readFile(database, function(err, data){
+				//add field using string
+				db.create('field', {table:tblname, field:field}, function(){
+					
+					var j = require(process.cwd()+'/'+database)	
+					assert.equal(j.tables[tblname].fields[0], field)
+					
+					var foo ={
+						table:tblname, 
+						field: ['one','two','three']
+					}
 
-						var j = JSON.parse(data)
-						assert.equal(j.tables[tblname].fields[0], field)
+					//add field by array
+					db.create('field', foo, function(){
 
+						var j = require(process.cwd()+'/'+database)
+						assert.deepEqual(["foo_field","one","two","three"], j.tables[tblname].fields)
+						
 						//delete field
 						db.delete('field', {table:tblname, field:field}, function(){
 
-							fs.readFile(database, function(err, data){
-
-								var j = JSON.parse(data)
-								assert.deepEqual(j.tables[tblname].fields, [null])
-								done()
-							})
+							var j = require(process.cwd()+'/'+database)
+							assert.deepEqual(j.tables[tblname].fields, foo.field)
+							done()
 						})
 					})
+					
 				})
 			})
 	})
+
+	/**
+	it('Should add and delete rows', function(done){
+
+		var fields = ["field_1", "field2", "field3"]
+		var row = ["val1", "val2", "val3"]
+
+		done()
+	})*/
 })

@@ -20,11 +20,32 @@ db = require('jsondb').connect('my_database')
 //To change db file location
 db = require('jsondb')
 db.getDB().storage('/path/to/file')
-db.connect('my_database')
 
-//create
-db.query("create", "table_name")
-db.create("table_name")
+//connect or create a database
+db.connect('my_database', fn)
+
+//delete database
+db.delete('my_database', fn)
+
+//create table
+db.create('table', 'my_table_name', fn)
+
+//delete table
+db.delete('table', 'my_table_name', fn)
+
+//create field
+db.create('field', {table:"my_table_name", field:"my_field"}, fn)
+
+//delete fields
+db.delete('field', {table:"my_table_name", field:"my_field"}, fn)
+
+//add row - note the index of these must match the index of db.tables[tblname].fields
+db.add(tblname, [var1, var2, var3], fn)
+
+//delete row
+db.delete('row', {table:"my_table_name", {field_name: value, field_name2: value}})
+
+
 
 //read
 db.query("select","table_name")

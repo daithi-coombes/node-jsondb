@@ -66,23 +66,38 @@ var DB = function jsondb(){
 	//@public create a table
 	this.create = function(what, tblname, fn){
 
-		var json = this.getJSON()
+		var j = require(self.database)
 
 		switch(what){
 
 			case 'field':
-				if(json.tables[tblname.table].fields.indexOf(tblname.field)>=0)
+
+				var fields = j.tables[tblname.table].fields
+
+				//if field exists return
+				if(~fields.indexOf(tblname.field))
 					return this
-				else
-					json.tables[tblname.table].fields.push(tblname.field)
+				else{
+
+					//if fields is empty
+					if(fields.length==0){
+						if(typeof(tblname.field)=='string')
+							fields = [tblname.field]
+						else
+							fields = tblname.field
+					}
+					else
+						fields = fields.concat(tblname.field)
+				}
+				j.tables[tblname.table].fields = fields
 				break;
 
 			case 'table':
-				json.tables[tblname] = {fields: [], data: []}
+				j.tables[tblname] = {fields: [], data: []}
 				break;
 		}
 
-		this.setJSON(json, fn)
+		this.setJSON(j, fn)
 		return this
 	}
 
@@ -123,10 +138,10 @@ var DB = function jsondb(){
 
 	this.delete_field = function(tblname, field, fn){
 
-		var j = this.getJSON()
+		var j = require(self.database)
 		var index = j.tables[tblname].fields.indexOf(field)
 
-		delete j.tables[tblname].fields[index]
+		j.tables[tblname].fields.splice(index, 1)
 		this.setJSON(j, fn)
 
 		return this
@@ -134,7 +149,7 @@ var DB = function jsondb(){
 
 	this.delete_table = function(tblname, fn){
 
-		var j = this.getJSON()
+		var j = require(self.database)
 		delete j.tables[tblname]
 		this.setJSON(j, fn)
 	}
@@ -150,7 +165,7 @@ var DB = function jsondb(){
 
 	this.update = function(tblname, data, fn){
 
-		var j = this.getJSON()
+		var j = require(self.database)
 
 		if(!j.tables[tblname])
 			throw new Error('Unkown table: '+tblname)
@@ -215,16 +230,15 @@ var DB = function jsondb(){
 	 * @private
 	 */
 	this.getJSON = function(){
-		return require(db.database)
+
+		return require(self.database)
 	}
 
-	function pushData(tblname, data){
-	}
-	
 	this.setJSON = function(json, fn){
-
+		
 		var _json = JSON.stringify(json, null, 4)
 		fs.writeFile(db.database, _json, {flag: 'w'}, fn)
+		return
 	}
 
 }
