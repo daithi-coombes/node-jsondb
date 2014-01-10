@@ -23,7 +23,10 @@ var DB = function jsondb(){
 	this.storage = '.'
 	this.handle = null
 
-	//@public close connection
+	/**
+	 * Reset class parameters
+	 * @param  {Function} fn Callback
+	 */
 	this.close = function(fn){
 
 		this.dbname = null
@@ -35,44 +38,48 @@ var DB = function jsondb(){
 		return this
 	}
 
-	//@public connect to database
+	/**
+	 * Connect or create a database
+	 * @param  {string}   dbname The database name
+	 * @param  {Function} fn     Callback
+	 */
 	this.connect = function(dbname, fn){
 
 		flags.CONNECTING = true
 		self.dbname = dbname
 		self.database = getDBLocation(this.dbname)
-		var _db = self.database
-		var _dbname = dbname
 
 		//check database file
-		var exists = fs.existsSync(_db)
+		var exists = fs.existsSync(self.database),
+			json
 
 		if(!exists){
 						
-			var json = {
-				dbname: _dbname,
+			json = {
+				dbname: dbname,
 				tables: {}
 			}
 			var str = JSON.stringify(json, null, 4)
-			fs.writeFileSync(_db, str)
+			fs.writeFileSync(self.database, str)
 
-		}
-		if(fn){
-			fn()
-		}
+		}else
+			json = require(self.database)
+		
+		if(fn)
+			fn(json)
+
 		return this
 	}
 
 	//@public create a table
 	this.create = function(what, tblname, fn){
 
-		var j = require(self.database)
 
 		switch(what){
 
-			case 'field':
+			case 'col':
 
-				var fields = j.tables[tblname.table].fields
+				var col = j.tables[tblname.table].cols
 
 				//if field exists return
 				if(~fields.indexOf(tblname.field))
@@ -93,7 +100,10 @@ var DB = function jsondb(){
 				break;
 
 			case 'table':
-				j.tables[tblname] = {fields: [], data: []}
+				break;
+
+			default:
+				self.error('Unkown action: '+what)
 				break;
 		}
 
@@ -101,6 +111,25 @@ var DB = function jsondb(){
 		return this
 	}
 
+	/**
+	 * Create a table
+	 * @param  {string}   tblname The table name
+	 * @param  {Function} fn      Callback
+	 */
+	this.create_table = function(tblname, fn){
+
+		var j = require(self.database)
+		j.tables[tblname] = {cols: [], data: []}
+
+		this.setJSON(j, fn)
+		return this
+	}
+
+	/**
+	 * Delete a database
+	 * @param  {string}   dbname The database name
+	 * @param  {Function} fn     Callback
+	 */
 	this.delete_db = function(dbname, fn){
 
 		var cb = fn,
@@ -170,13 +199,18 @@ var DB = function jsondb(){
 		this.setJSON(j, fn)
 	}
 
+	this.error = function(msg){
+
+		throw new Error(msg)
+	}
+
 	this.insert = function(tblname, row, fn){
 
 		var j = require(self.database)
 
 		//check num of cols matches
 		if( row.length!=j.tables[tblname].fields.length )
-			throw new Error('Invalid number of cols')
+			this.error('Invalid number of cols')
 
 		j.tables[tblname].data.push(row)
 		this.setJSON(j, fn)
@@ -184,6 +218,11 @@ var DB = function jsondb(){
 		return this
 	}
 
+	/**
+	 * Set database path
+	 * @param {string}   path The path to store database in
+	 * @param {Function} fn   Callback
+	 */
 	this.setStorage = function(path, fn){
 
 		self.storage = path
@@ -191,6 +230,11 @@ var DB = function jsondb(){
 		if(fn)
 			fn()
 		return this
+	}
+
+	this.update_col = function(tblname, data, fn){
+
+		var j = require(self.database)
 	}
 
 	this.update_row = function(tblname, data, fn){
@@ -213,34 +257,66 @@ var DB = function jsondb(){
 	}
 
 	/**
-	 * Handles all queries, does check for connection etc.
-	 * @deprecated not in use in this version
+	 * Rename a table
+	 * @param  {json}   data @see _driver:update()
+	 * @param  {Function} fn   Callback
 	 */
-	this.query = function(method){
+	this.update_table = function(data, fn){
 
-		var _self = this
-		var _method = method
-		var _args = arguments
+		var j = require(self.database)
 
-		//callback to see if db exists
-		function queryCheck(ok){
-			_self[method]( _args )
-		}
+		//validate table name
+		var regex = /^[a-zA-Z][a-zA-Z0-9_]+$/i
+		if(!data.set[1].match(regex))
+			this.error('Only alphanumeric and underscore allowed for table names')
 
-		//check if connected
-		if( method!="connect" )
-			this.connected(queryCheck)
-		queryCheck()
+		//create new key
+		j.tables[data.set[1]] = j.tables[data.set[0]]
+
+		//delete old key
+		delete j.tables[data.set[0]]
+		this.setJSON(j, fn)
+		return this
 	}
 
 	/**
-	 * Check if connected, called by this.query
+	 * Handles all queries, does check for connection etc.
 	 * @deprecated not in use in this version
-	 * @private
 	 */
-	function connected(fn){
-		var ok = true
-		fn(ok)
+	this.query = function(tblname, query, fn){
+
+		var j = require(self.database),
+			table = j.tables[tblname],
+			cols = table.fields,
+			data = table.data,
+			res = [],
+			queries = []
+
+		//cast query to array (in single object passed as query arg)
+		Array.isArray(query) ?
+			queries = query :
+			queries = [query] 
+
+
+		queries.forEach(function(test, index){
+			data.forEach(function(row, i){
+
+				col = cols.indexOf(test.where[0])
+
+				if(col<0)
+					self.error('Unkown col: '+test.where[0])
+
+				if(row[col]==test.where[1]){
+					r = {}
+					cols.forEach(function(c, x){
+						r[c] = row[x]
+					})
+					res.push(r)
+				}
+			})
+		})
+
+		fn(res)
 	}
 
 	/**
@@ -271,24 +347,65 @@ var queue = []
  */
 var driver = {
 
+	/**
+	 * Close a connection.
+	 * Resets class params
+	 * @param  {Function} fn Callback
+	 * @return {this}
+	 */
 	close: function(fn){
 		db.close(fn)
 		//queue.push(db.close.bind(db, fn))
 		return this
 	},
 
+	/**
+	 * Connect to a database.
+	 * Will create database if none exists. Use this.setStorage() to set the
+	 * database file path
+	 * @param  {string}   dbname The database name
+	 * @param  {Function} fn     Callback
+	 * @return this
+	 */
 	connect: function(dbname, fn){
 		db.connect(dbname, fn)
 		//queue.push(db.connect.bind(db, dbname, fn))
 		return this
 	},
 
-	create: function(what, tblname, fn){
+	/**
+	 * Create query.
+	 * TO create a table:
+	 *  - db.create('table', 'my_table_name', fn)
+	 * @param  {enum}   what What to create. Possible values are: table
+	 * @param  {mixed}   data Parameters to pass for create. See method
+	 * description
+	 * @param  {Function} fn   Callback
+	 * @return {this}        Returns self for chaining
+	 */
+	create: function(what, data, fn){
 
-		db.create(what, tblname, fn)
+		switch(what){
+
+			case 'table':
+				db.create_table(data, fn)
+				break;
+		}
+
 		return this
 	},
 
+	/**
+	 * Delete query.
+	 * To delete a database:
+	 *  - db.delete('database','database_name', fn)
+	 * @param  {enum}   what What to delete. Possible values are: database,
+	 * field, row, table
+	 * @param  {mixed}   val  Parameters to pass for delete. See method
+	 * description
+	 * @param  {Function} fn   Callback
+	 * @return {this}        Returns self for chaining
+	 */
 	delete: function(what, val, fn){
 
 		switch(what){
@@ -310,6 +427,8 @@ var driver = {
 				break;
 
 		}
+
+		return this
 	},
 	
 	getDB: function(){
@@ -323,14 +442,38 @@ var driver = {
 		return this
 	},
 
+	/**
+	 * Update query.
+	 * To update a table name:
+	 *  - db.update('table', {set: ["old_name","new_name"]}, fn)
+	 * @param  {enum}   what What to update. Possible values are: table, col,
+	 * row
+	 * @param  {mixed}   data Parameters to pass for update. See method
+	 * description
+	 * @param  {Function} fn   Callback
+	 * @return {this}        Returns self for chaining
+	 */
 	update: function(what, data, fn){
 		
 		switch(what){
 
+			case 'col':
+				db.update_col(data.table, data.data, fn)
+				break;
+
 			case 'row':
 				db.update_row(data.table, data.data, fn)
 				break;
+
+			case 'table':
+				db.update_table(data, fn)
 		}
+		return this
+	},
+
+	query: function(tblname, query, fn){
+
+		db.query(tblname, query, fn)
 		return this
 	},
 
@@ -344,6 +487,13 @@ var driver = {
 		return null
 	},
 
+	/**
+	 * Set the database path.
+	 * Sets the path the database json file will be stored in
+	 * @param {string}   path The full path to the database directory
+	 * @param {Function} fn   Callback
+	 * @return {this} Returns self for chaining
+	 */
 	setStorage: function(path, fn){
 		db.setStorage(path, fn)
 		//queue.push(db.setStorage.bind(db, path, fn))

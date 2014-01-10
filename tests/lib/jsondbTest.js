@@ -16,7 +16,7 @@ describe('jsondb: ', function(){
 		dbname = 'my_database'
 		storage = './tests'
 		tblname = 'foo_table'
-		database = storage+'/'+dbname+'.json'
+		database = process.cwd()+'/'+storage+'/'+dbname+'.json'
 
 		db.setStorage(storage, function(){
 			done()
@@ -34,96 +34,105 @@ describe('jsondb: ', function(){
 				done()
 		})
 	})
-
+	
 	it('Should create new database', function(done){
 
-		db.connect(dbname, function(){
+		//test connecting
+		db.connect(dbname, function(db){
 
-			fs.readFile(database, function(err, data){
-				var j = JSON.parse(data)
-				assert.equal(j.dbname, dbname)
-				done()
-			})
-		})
+			var j = require(database),
+				test = { dbname: 'my_database', tables: {} }
+			assert.deepEqual(j, test)
+			done()
+		})//end test connecting
 
 	})
 
 	it('Should connect to created database', function(done){
 		
-		//create db
+		//connect to new database
 		db.connect(dbname, function(){
 			db.close(function(){
 				db.setStorage(storage, function(){
-					db.connect(dbname, function(){
-						fs.exists(database, function(exists){
-							if(exists)
-								done()
-						})
-					})
+
+					//reconnect to database
+					db.connect(dbname, function(db){
+						var test = { dbname: 'my_database', tables: {} }
+						assert.deepEqual(db, test)
+						done()
+					})//end reconnect
 				})
 			})
-		})
+		})//end new connection
 	})
 
 	it('Should delete database', function(done){
 		
 		db.connect(dbname, function(){
-
 			db.setStorage(storage)
+
+			//test delete database
 			db.delete('database', dbname, function(){
 
 				fs.exists(database, function(exists){
 					if(!exists)
 						done()
 				})
-			})
+			})//end test delete database
 		})		
 	})
 
-	it('Should create and delete table', function(done){
+	it('CRUD tables', function(done){
 
+		//test create table
 		db.connect(dbname)
 			.create('table', tblname, function(){
-				
-				fs.readFile(database, {encoding:'UTF8'}, function(err, data){
+				var j = require(database)
 
-					var j = JSON.parse(data)
+				assert.deepEqual(j, {
+					    "dbname": "my_database",
+					    "tables": {
+					        "foo_table": {
+					        	cols: [],
+					        	data: []
+					        }
+					    }
+					}
+				)//end test create table
+
+				//test delete table
+				db.delete('table', tblname, function(){
+
+					var j = require(database)
 					assert.deepEqual(j, {
 						    "dbname": "my_database",
-						    "tables": {
-						        "foo_table": {
-						        	fields: [],
-						        	data: []
-						        }
-						    }
+						    "tables": {}
 						}
 					)
 
-					db.delete('table', tblname, function(){
-						fs.readFile(database, {encoding:'UTF8'}, function(err, data){
+					//update a table
+					db.create('table', tblname, function(){
+						db.update('table', {set: [tblname,"new_name"]}, function(){
+							var j = require(database)
 
-							var j = JSON.parse(data)
-							assert.deepEqual(j, {
-								    "dbname": "my_database",
-								    "tables": {}
-								}
-							)
+							assert.deepEqual(j.tables, {"new_name":{"cols":[],"data":[]}})
 							done()
 						})
 					})
-				})
+				})//end test delete table
 			})
 	})
+	/**
 	
-	it('Should add and delete fields', function(done){
+	it('CRUD columns', function(done){
 
-		var field = 'foo_field'
+		var col = 'foo_field'
 
 		db.connect(dbname)
 			.create('table', tblname, function(){
 				
 				//add field using string
-				db.create('field', {table:tblname, field:field}, function(){
+				db.create('field', {table:tblname, col:col}, function(){
 					
 					var j = require(process.cwd()+'/'+database)	
 					assert.equal(j.tables[tblname].fields[0], field)
@@ -151,7 +160,7 @@ describe('jsondb: ', function(){
 				})
 			})
 	})
-	
+	/**
 	it('Should add, delete and update rows', function(done){
 
 		var fields = ["field_1", "field2", "field3"],
@@ -202,4 +211,63 @@ describe('jsondb: ', function(){
 				})
 			})
 	})
+
+	it('Should query database for results', function(done){
+
+		var fields = ["field_1", "field2", "field3"],
+			row = ["val1", "val2", "val3"],
+			row2 = ["val4", "val5", "val6"],
+			row3 = ["val1", "val7", "val8"]
+
+		db.connect(dbname)
+			.create('table', tblname, function(){
+				db.create('field', {table:tblname, field:fields}, function(){
+
+					db.insert(tblname, row, function(){
+						db.insert(tblname, row2, function(){
+							db.insert(tblname, row3, function(){
+								db.insert(tblname, row, function(){
+									db.insert(tblname, row2, function(){
+										db.insert(tblname, row3, function(){
+
+											db.query(tblname, {where:["field_1", "val4"]}, function(results){
+
+												var test = [
+													{
+														"field_1" : "val4",
+														"field2" : "val5",
+														"field3" : "val6"
+													},
+													{
+														"field_1" : "val4",
+														"field2" : "val5",
+														"field3" : "val6"
+													}
+												]
+												assert.deepEqual(test, results)
+
+												var data = [
+													{where:["field2", "val7"]},
+													{where:["field3", "val8"]}
+												]
+												db.query(tblname, data, function(results){
+
+													var test = [ { field_1: 'val1', field2: 'val7', field3: 'val8' },
+													{ field_1: 'val1', field2: 'val7', field3: 'val8' },
+													{ field_1: 'val1', field2: 'val7', field3: 'val8' },
+													{ field_1: 'val1', field2: 'val7', field3: 'val8' } ]
+
+													assert.deepEqual(test, results)
+													done()
+												})
+											})
+										})
+									})
+								})
+							})
+						})
+					})
+				})
+			})
+	})*/
 })
