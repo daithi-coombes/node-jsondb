@@ -198,10 +198,9 @@ var DB = function jsondb(){
 		var j = require(self.database),
 			table = j.tables[tblname],
 			fields = j.tables[tblname].fields,
-			rows = j.tables[tblname].data
-
-		var col_where = j.tables[tblname].fields.indexOf(data.where[0])
-		var col_set = j.tables[tblname].fields.indexOf(data.set[0])
+			rows = j.tables[tblname].data,
+			col_where = fields.indexOf(data.where[0]),
+			col_set = fields.indexOf(data.set[0])
 
 		rows.forEach(function(row, index){
 			if(row[col_where]==data.where[1])
