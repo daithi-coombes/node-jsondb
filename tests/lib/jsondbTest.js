@@ -151,13 +151,55 @@ describe('jsondb: ', function(){
 				})
 			})
 	})
+	
+	it('Should add, delete and update rows', function(done){
 
-	/**
-	it('Should add and delete rows', function(done){
+		var fields = ["field_1", "field2", "field3"],
+			row = ["val1", "val2", "val3"],
+			row2 = ["val4", "val5", "val6"],
+			row3 = ["val1", "val7", "val8"]
 
-		var fields = ["field_1", "field2", "field3"]
-		var row = ["val1", "val2", "val3"]
+		db.connect(dbname)
+			.create('table', tblname, function(){
+				db.create('field', {table:tblname, field:fields}, function(){
 
-		done()
-	})*/
+					//add rows
+					db.insert(tblname, row, function(){
+						db.insert(tblname, row2, function(){
+							db.insert(tblname, row3, function(){
+
+								//test row inserts
+								var j = require(process.cwd()+'/'+database)
+								assert.deepEqual(j.tables[tblname].data, [row, row2, row3])
+
+								var foo = {
+									table: tblname,
+									col: ["field_1", "val1"]
+								}
+								db.delete('row', foo, function(){
+
+									//test delete rows
+									var j = require(process.cwd()+'/'+database)
+									assert.deepEqual(j.tables[tblname].data, [row2])
+
+									var foo = {
+										table: tblname,
+										data: {
+											where: ["field_1", "val4"],
+											set: ["field_1", "new val"]
+										}
+									}
+									db.update('row', foo, function(){
+
+										var j = require(process.cwd()+'/'+database)
+										assert.deepEqual(j.tables[tblname].data, [["new val", "val5", "val6"]])
+										done()
+									})
+								})
+							})
+						})
+					})
+				})
+			})
+	})
 })

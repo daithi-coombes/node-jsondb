@@ -147,11 +147,41 @@ var DB = function jsondb(){
 		return this
 	}
 
+	this.delete_row = function(tblname, data, fn){
+
+		var j = require(self.database)
+		var rows = j.tables[tblname].data
+		var col = j.tables[tblname].fields.indexOf(data[0])
+
+		rows.forEach(function(row, index){
+			if(row[col]==data[1])
+				rows.splice(index, 1)
+		})
+
+		j.tables[tblname].data = rows
+
+		self.setJSON(j, fn)
+	}
+
 	this.delete_table = function(tblname, fn){
 
 		var j = require(self.database)
 		delete j.tables[tblname]
 		this.setJSON(j, fn)
+	}
+
+	this.insert = function(tblname, row, fn){
+
+		var j = require(self.database)
+
+		//check num of cols matches
+		if( row.length!=j.tables[tblname].fields.length )
+			throw new Error('Invalid number of cols')
+
+		j.tables[tblname].data.push(row)
+		this.setJSON(j, fn)
+
+		return this
 	}
 
 	this.setStorage = function(path, fn){
@@ -163,24 +193,24 @@ var DB = function jsondb(){
 		return this
 	}
 
-	this.update = function(tblname, data, fn){
+	this.update_row = function(tblname, data, fn){
 
-		var j = require(self.database)
+		var j = require(self.database),
+			table = j.tables[tblname],
+			fields = j.tables[tblname].fields,
+			rows = j.tables[tblname].data
 
-		if(!j.tables[tblname])
-			throw new Error('Unkown table: '+tblname)
+		var col_where = j.tables[tblname].fields.indexOf(data.where[0])
+		var col_set = j.tables[tblname].fields.indexOf(data.set[0])
 
-		//if data is string, then add new field
-		if(typeof(data)=='string')
-			j.tables[tblname].fields.push(data)
-		else
-			//else add new row
-			j.tables[tblname].push(data)
-		this.setJSON(j, cb)
+		rows.forEach(function(row, index){
+			if(row[col_where]==data.where[1])
+				rows[index][col_set]=data.set[1]
+		})
 
-		if(fn)
-			fn()
-		return this
+		j.tables[tblname].data = rows
+
+		self.setJSON(j, fn)
 	}
 
 	/**
@@ -223,15 +253,6 @@ var DB = function jsondb(){
 	function getDBLocation(dbname){
 
 		return process.cwd()+'/'+db.storage+'/'+dbname+'.json'
-	}
-
-	/**
-	 * Get the current json object from database file
-	 * @private
-	 */
-	this.getJSON = function(){
-
-		return require(self.database)
 	}
 
 	this.setJSON = function(json, fn){
@@ -277,13 +298,18 @@ var driver = {
 				db.delete_db(val, fn)
 				break;
 
+			case 'field':
+				db.delete_field(val.table, val.field, fn)
+				break;
+
+			case 'row':
+				db.delete_row(val.table, val.col, fn)
+				break;
+
 			case 'table':
 				db.delete_table(val, fn)
 				break;
 
-			case 'field':
-				db.delete_field(val.table, val.field, fn)
-				break;
 		}
 	},
 	
@@ -292,9 +318,20 @@ var driver = {
 		return db
 	},
 
-	update: function(tblname, data, fn){
+	insert: function(tblname, row, fn){
+
+		db.insert(tblname, row, fn)
+		return this
+	},
+
+	update: function(what, data, fn){
 		
-		db.update(tblname, data, fn)
+		switch(what){
+
+			case 'row':
+				db.update_row(data.table, data.data, fn)
+				break;
+		}
 		return this
 	},
 
