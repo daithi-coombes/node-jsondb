@@ -159,9 +159,14 @@ describe('jsondb: ', function(){
 								j.tables[tblname].data = data
 								db.getDB().setJSON(j, function(){
 
-									//delete field
+									//delete col
 									db.delete('col', {table:tblname, col:col}, function(){
 										db.getJSON(function(j){
+
+											var foo ={
+												table:tblname, 
+												col: ['one','two','three']
+											}
 
 											assert.deepEqual(j.tables[tblname].cols, foo.col)
 											assert.deepEqual(j.tables[tblname].data, [ [ 'row one', 'row two', 'row three' ],
@@ -172,16 +177,27 @@ describe('jsondb: ', function(){
 												[ 'row one', 'row two', 'row three' ],
 												[ 'row one', 'row two', 'row three' ] 
 											])
-											done()
+
+											var foo = {
+												table: tblname,
+												set: ["two", "new_col"]
+											}
+											db.update('col', foo, function(){
+												db.getJSON(function(j){
+
+													assert.deepEqual(j.tables[tblname].cols, [ 'one', 'new_col', 'three' ])
+													done()
+												})
+											})//end update col
 										})
-									})
+									})//end delete col
 								})
 							})
-						})
+						})//end create col
 
 					})					
-				})
-			})
+				})//end create col
+			})//end create table
 	})
 	
 	it('CRUD rows', function(done){
@@ -291,7 +307,7 @@ describe('jsondb: ', function(){
 													done()
 												})
 											})//end query
-											
+
 										})//end insert
 									})//end insert
 								})//end insert

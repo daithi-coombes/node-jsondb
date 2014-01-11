@@ -285,9 +285,26 @@ var DB = function jsondb(){
 		return this
 	}
 
+	/**
+	 * Update a column
+	 * @param  {string}   tblname The table name
+	 * @param  {array}   data    Array["old_name", "new_name"]
+	 * @param  {Function} fn      Callback
+	 */
 	this.update_col = function(tblname, data, fn){
 
-		var j = require(self.database)
+		self.getJSON(function(j){
+
+			var index = j.tables[tblname].cols.indexOf(data[0])
+			if(!~index)
+				self.error('Unkown column "'+data[0]+'" for update')
+
+			j.tables[tblname].cols[index] = data[1]
+
+			self.setJSON(j, fn)
+		})
+
+		return this
 	}
 
 	/**
@@ -559,6 +576,7 @@ var driver = {
 	 * To update a table name:
 	 *  - db.update('table', {set: ["old_name","new_name"]}, fn)
 	 *  - db.update('row', {table: tblname, data: {where: ["field_1", "val4"], set: ["field_1", "new val"]}}, fn)
+	 *  - db.update('col', {table: tblname, set: ["foo_col", "new_col"]}, fn)
 	 * @param  {enum}   what What to update. Possible values are: table, col,
 	 * row
 	 * @param  {mixed}   data Parameters to pass for update. See method
@@ -571,7 +589,7 @@ var driver = {
 		switch(what){
 
 			case 'col':
-				db.update_col(data.table, data.data, fn)
+				db.update_col(data.table, data.set, fn)
 				break;
 
 			case 'row':
