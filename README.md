@@ -15,6 +15,7 @@ Usage
 ```
 var db = require('jsondb')
 db.connect('my_database_name')
+```
 
 Setup
 -----
@@ -59,6 +60,7 @@ var query = [
 	{where: ["name", "Daithi Coombes"]}
 ]
 db.query("my_table_name", query, fn)
+```
 
 Update
 ------
@@ -85,9 +87,11 @@ db.update('col', query, fn)
 
 //update table name
 db.update('table', {set: ["old_name","new_name"]}, fn)
+```
 
 Delete
 ------
+```
 //delete database
 db.delete('my_database', fn)
 
