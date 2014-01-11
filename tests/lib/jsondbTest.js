@@ -120,7 +120,7 @@ describe('jsondb: ', function(){
 										assert.deepEqual(j.tables, {"new_name":{"cols":[],"data":[]}})
 										done()
 									})
-								})
+								})//end update table
 							})
 						})
 					})//end test delete table

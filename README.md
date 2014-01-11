@@ -34,15 +34,14 @@ db = require('jsondb').connect('my_database')
 //connect or create a database
 db.connect('my_database', fn)
 
-//create field
-var query = {
-	table:"my_table_name", 
-	field:"my_field"
-	}
-db.create('field', query, fn)
+//create table
+db.create('table', 'my_table_name', fn)
 
-//add row - note the index of these must match the index of database.tables[tblname].fields
-db.add(tblname, [var1, var2, var3], fn)
+//create col
+db.create('col', {table:tblname, col:col}, fn)
+
+//insert row - note the index of these must match the index of database.tables[tblname].fields
+db.insert(tblname, ["value 1", "value 2", "value 3"], fn)
 ```
 
 Read
@@ -51,7 +50,7 @@ Read
 var db = require('jsondb')
 
 //get database json
-var json = require(db.getDB().database)
+var json = db.getJSON(fn)
 
 //query database:
 //the query format is [{where: [col, val]}]
@@ -80,7 +79,7 @@ db.update('row', query, fn)
 //also the must start with a letter.
 var query = {
 	table: tblname,
-	where: ["old_col_name", "new_col_name"]
+	set: ["old_col_name", "new_col_name"]
 }
 db.update('col', query, fn)
 
@@ -92,24 +91,12 @@ Delete
 //delete database
 db.delete('my_database', fn)
 
-//create table
-db.create('table', 'my_table_name', fn)
-
 //delete table
 db.delete('table', 'my_table_name', fn)
 
-//delete fields
-db.delete('field', {table:"my_table_name", field:"my_field"}, fn)
-
 //delete row
-db.delete('row', {table:"my_table_name", {field_name: value, field_name2: value}})
+db.delete('row', {table: tblname, where: ["col_name", "val"]}, fn)
 
-//delete
-db.delete("table_name")	//delete table
-db.delete("table_name", {field: value})  //deletes row
-db.delete("table_name", "field_name")	//deletes col
+//delete col
+db.delete('col', {table:tblname, col:col}, fn)
 ```
-
-concept
-=======
-All querries and commands should go through the one method
