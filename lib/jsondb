@@ -39,7 +39,8 @@ var DB = function jsondb(){
 	}
 
 	/**
-	 * Connect or create a database
+	 * Connect or create a database.
+	 * Makes synchronous calls
 	 * @param  {string}   dbname The database name
 	 * @param  {Function} fn     Callback
 	 */
@@ -71,43 +72,35 @@ var DB = function jsondb(){
 		return this
 	}
 
-	//@public create a table
-	this.create = function(what, tblname, fn){
+	/**
+	 * Create column
+	 * @param  {string}   tblname Table name
+	 * @param  {string}   new_col Column name
+	 * @param  {Function} fn      Callback
+	 */
+	this.create_col = function(tblname, new_col, fn){
 
+		self.getJSON(function(j){
+			var cols = j.tables[tblname].cols
+			//if field exists return
+			if(~cols.indexOf(new_col))
+				return this
+			else{
 
-		switch(what){
-
-			case 'col':
-
-				var col = j.tables[tblname.table].cols
-
-				//if field exists return
-				if(~fields.indexOf(tblname.field))
-					return this
-				else{
-
-					//if fields is empty
-					if(fields.length==0){
-						if(typeof(tblname.field)=='string')
-							fields = [tblname.field]
-						else
-							fields = tblname.field
-					}
+				//if cols is empty
+				if(cols.length==0){
+					if(typeof(new_col)=='string')
+						cols = [new_col]
 					else
-						fields = fields.concat(tblname.field)
+						cols = new_col
 				}
-				j.tables[tblname.table].fields = fields
-				break;
+				else
+					cols = cols.concat(new_col)
+			}
+			j.tables[tblname].cols = cols
 
-			case 'table':
-				break;
-
-			default:
-				self.error('Unkown action: '+what)
-				break;
-		}
-
-		this.setJSON(j, fn)
+			self.setJSON(j, fn)
+		})
 		return this
 	}
 
@@ -118,10 +111,11 @@ var DB = function jsondb(){
 	 */
 	this.create_table = function(tblname, fn){
 
-		var j = require(self.database)
-		j.tables[tblname] = {cols: [], data: []}
+		self.getJSON(function(j){
+			j.tables[tblname] = {cols: [], data: []}
 
-		this.setJSON(j, fn)
+			self.setJSON(j, fn)
+		})
 		return this
 	}
 
@@ -138,10 +132,7 @@ var DB = function jsondb(){
 
 		flags.DELETING_DB = true
 
-		//setup database filename
-		this.database = _db
-
-		fs.exists(this.database, function(exists){
+		fs.exists(_db, function(exists){
 
 			var _self = self
 				_cb = cb
@@ -149,8 +140,6 @@ var DB = function jsondb(){
 
 			if(exists){
 				fs.unlink(_db, function(err){
-					if(err)
-						throw new Error(err)
 
 					if(_self.dbname==_dbname)
 						_self.close()
@@ -160,60 +149,124 @@ var DB = function jsondb(){
 				})
 			}
 			else
-				if(_cb)
-					_cb()
+				self.error('Unkown database: '+dbname)
 		})
 	}
 
-	this.delete_field = function(tblname, field, fn){
+	/**
+	 * Delete a column
+	 * @param  {string}   tblname The table name
+	 * @param  {string}   col     The column to delete
+	 * @param  {Function} fn      Callback
+	 */
+	this.delete_col = function(tblname, col, fn){
+
+		self.getJSON(function(j){
+
+			var cols = j.tables[tblname].cols,
+				data = j.tables[tblname].data
+				index = cols.indexOf(col)
+
+			if(!~cols.indexOf(col))
+				self.error('jsondb: delete unkown col: '+col)
+
+			//remove from cols field
+			cols.splice(index, 1)
+
+			//remove column from data
+			data.forEach(function(row, i){
+				data[i].splice(index, 1)
+			})
+
+			//set new json
+			j.tables[tblname].cols = cols
+			j.tables[tblname].data = data
+			self.setJSON(j, fn)
+		})
+		return this
+	}
+
+	/**
+	 * Delete a row
+	 * @param  {string}   tblname The table name
+	 * @param  {[type]}   data    Array of column value
+	 * @param  {Function} fn      Callback
+	 */
+	this.delete_row = function(tblname, where, fn){
 
 		var j = require(self.database)
-		var index = j.tables[tblname].fields.indexOf(field)
+		self.getJSON(function(j){
 
-		j.tables[tblname].fields.splice(index, 1)
-		this.setJSON(j, fn)
+			var rows = j.tables[tblname].data,
+				col = j.tables[tblname].cols.indexOf(where[0])
+
+			rows.forEach(function(row, index){
+				if(row[col]==where[1])
+					rows.splice(index, 1)
+			})
+
+			j.tables[tblname].data = rows
+
+			self.setJSON(j, fn)
+		})
 
 		return this
 	}
 
-	this.delete_row = function(tblname, data, fn){
-
-		var j = require(self.database)
-		var rows = j.tables[tblname].data
-		var col = j.tables[tblname].fields.indexOf(data[0])
-
-		rows.forEach(function(row, index){
-			if(row[col]==data[1])
-				rows.splice(index, 1)
-		})
-
-		j.tables[tblname].data = rows
-
-		self.setJSON(j, fn)
-	}
-
+	/**
+	 * Delete a table
+	 * @param  {string}   tblname The table name
+	 * @param  {Function} fn      Callback
+	 */
 	this.delete_table = function(tblname, fn){
 
-		var j = require(self.database)
-		delete j.tables[tblname]
-		this.setJSON(j, fn)
+		self.getJSON(function(j){
+			delete j.tables[tblname]
+			self.setJSON(j, fn)
+		})
+		return this
 	}
 
+	/**
+	 * Throw an error
+	 * @param  {string} msg The error message
+	 */
 	this.error = function(msg){
 
 		throw new Error(msg)
 	}
 
+	/**
+	 * Get parse json from database file
+	 * @param  {Function} fn Callback
+	 */
+	this.getJSON = function(fn){
+
+		fs.readFile(self.database, function(err, data){
+			fn(JSON.parse(data))
+		})
+
+		return self
+	}
+
+	/**
+	 * Insert a row
+	 * @param  {string}   tblname The table name
+	 * @param  {array}   row     The row
+	 * @param  {Function} fn      Callback
+	 */
 	this.insert = function(tblname, row, fn){
 
-		var j = require(self.database)
+		self.getJSON(function(j){
 
-		//check num of cols matches
-		if( row.length!=j.tables[tblname].fields.length )
-			this.error('Invalid number of cols')
+			//check num of cols matches
+			if( row.length!=j.tables[tblname].cols.length )
+				this.error('Invalid number of cols')
 
-		j.tables[tblname].data.push(row)
-		this.setJSON(j, fn)
+			j.tables[tblname].data.push(row)
+			self.setJSON(j, fn)
+
+		})
 
 		return this
 	}
@@ -237,23 +290,33 @@ var DB = function jsondb(){
 		var j = require(self.database)
 	}
 
+	/**
+	 * Update a row
+	 * @param  {string}   tblname Table name
+	 * @param  {json}   data    JSON of where and set arrays
+	 * @param  {Function} fn      Callback
+	 */
 	this.update_row = function(tblname, data, fn){
 
-		var j = require(self.database),
-			table = j.tables[tblname],
-			fields = j.tables[tblname].fields,
-			rows = j.tables[tblname].data,
-			col_where = fields.indexOf(data.where[0]),
-			col_set = fields.indexOf(data.set[0])
+		self.getJSON(function(j){
 
-		rows.forEach(function(row, index){
-			if(row[col_where]==data.where[1])
-				rows[index][col_set]=data.set[1]
+			var	table = j.tables[tblname],
+				cols = j.tables[tblname].cols,
+				rows = j.tables[tblname].data,
+				col_where = cols.indexOf(data.where[0]),
+				col_set = cols.indexOf(data.set[0])
+
+			rows.forEach(function(row, index){
+				if(row[col_where]==data.where[1])
+					rows[index][col_set]=data.set[1]
+			})
+
+			j.tables[tblname].data = rows
+
+			self.setJSON(j, fn)
 		})
 
-		j.tables[tblname].data = rows
-
-		self.setJSON(j, fn)
+		return this
 	}
 
 	/**
@@ -263,60 +326,67 @@ var DB = function jsondb(){
 	 */
 	this.update_table = function(data, fn){
 
-		var j = require(self.database)
+		self.getJSON(function(j){
 
-		//validate table name
-		var regex = /^[a-zA-Z][a-zA-Z0-9_]+$/i
-		if(!data.set[1].match(regex))
-			this.error('Only alphanumeric and underscore allowed for table names')
+			//validate table name
+			var regex = /^[a-zA-Z][a-zA-Z0-9_]+$/i
+			if(!data.set[1].match(regex))
+				self.error('Only alphanumeric and underscore allowed for table names')
 
-		//create new key
-		j.tables[data.set[1]] = j.tables[data.set[0]]
+			//create new key
+			j.tables[data.set[1]] = j.tables[data.set[0]]
 
-		//delete old key
-		delete j.tables[data.set[0]]
-		this.setJSON(j, fn)
+			//delete old key
+			delete j.tables[data.set[0]]
+			self.setJSON(j, fn)
+		})
 		return this
 	}
 
 	/**
-	 * Handles all queries, does check for connection etc.
-	 * @deprecated not in use in this version
+	 * Query the database for a set of results
+	 * @param  {string}   tblname The table name
+	 * @param  {array}   query   An array of where objects
+	 * @param  {Function} fn      Callback
 	 */
 	this.query = function(tblname, query, fn){
 
-		var j = require(self.database),
-			table = j.tables[tblname],
-			cols = table.fields,
-			data = table.data,
-			res = [],
-			queries = []
+		self.getJSON(function(j){
 
-		//cast query to array (in single object passed as query arg)
-		Array.isArray(query) ?
-			queries = query :
-			queries = [query] 
+			var	table = j.tables[tblname],
+				cols = table.cols,
+				data = table.data,
+				res = [],
+				queries = []
+
+			//cast query to array (in single object passed as query arg)
+			Array.isArray(query) ?
+				queries = query :
+				queries = [query] 
 
 
-		queries.forEach(function(test, index){
-			data.forEach(function(row, i){
+			queries.forEach(function(test, index){
+				data.forEach(function(row, i){
 
-				col = cols.indexOf(test.where[0])
+					col = cols.indexOf(test.where[0])
 
-				if(col<0)
-					self.error('Unkown col: '+test.where[0])
+					if(col<0)
+						self.error('Unkown col: '+test.where[0])
 
-				if(row[col]==test.where[1]){
-					r = {}
-					cols.forEach(function(c, x){
-						r[c] = row[x]
-					})
-					res.push(r)
-				}
+					if(row[col]==test.where[1]){
+						r = {}
+						cols.forEach(function(c, x){
+							r[c] = row[x]
+						})
+						res.push(r)
+					}
+				})
 			})
+
+			fn(res)
 		})
 
-		fn(res)
+		return this
 	}
 
 	/**
@@ -330,6 +400,11 @@ var DB = function jsondb(){
 		return process.cwd()+'/'+db.storage+'/'+dbname+'.json'
 	}
 
+	/**
+	 * Save json to the database
+	 * @param {json}   json The full database in json format
+	 * @param {Function} fn   Callback
+	 */
 	this.setJSON = function(json, fn){
 		
 		var _json = JSON.stringify(json, null, 4)
@@ -375,8 +450,9 @@ var driver = {
 
 	/**
 	 * Create query.
-	 * TO create a table:
+	 * Possible usages:
 	 *  - db.create('table', 'my_table_name', fn)
+	 *  - db.create('col', {table:tblname, col:col}, fn)
 	 * @param  {enum}   what What to create. Possible values are: table
 	 * @param  {mixed}   data Parameters to pass for create. See method
 	 * description
@@ -387,8 +463,16 @@ var driver = {
 
 		switch(what){
 
+			case 'col':
+				db.create_col(data.table, data.col, fn)
+				break;
+
 			case 'table':
 				db.create_table(data, fn)
+				break;
+
+			default:
+				db.error('Unable to create "'+what+'". Unkown type')
 				break;
 		}
 
@@ -397,8 +481,11 @@ var driver = {
 
 	/**
 	 * Delete query.
-	 * To delete a database:
+	 * Possible usages:
 	 *  - db.delete('database','database_name', fn)
+	 *  - db.delete('table', 'tblname', fn)
+	 *  - db.delete('col', {table:tblname, col:col}, fn)
+	 *  - db.delete('row', {table: tblname, where: ["col_name", "val"]}, fn)
 	 * @param  {enum}   what What to delete. Possible values are: database,
 	 * field, row, table
 	 * @param  {mixed}   val  Parameters to pass for delete. See method
@@ -414,28 +501,53 @@ var driver = {
 				db.delete_db(val, fn)
 				break;
 
-			case 'field':
-				db.delete_field(val.table, val.field, fn)
+			case 'col':
+				db.delete_col(val.table, val.col, fn)
 				break;
 
 			case 'row':
-				db.delete_row(val.table, val.col, fn)
+				db.delete_row(val.table, val.where, fn)
 				break;
 
 			case 'table':
 				db.delete_table(val, fn)
 				break;
 
+			default:
+				db.error('Unkown value "'+what+'" for delete')
+				break;
 		}
 
 		return this
 	},
 	
+	/**
+	 * Returns the internal database object
+	 * @return {jsondb} The instance database object
+	 */
 	getDB: function(){
 		
 		return db
 	},
 
+	/**
+	 * Returns JSON parsed database
+	 * @param  {Function} fn Callback
+	 * @return {this}      Returns self for chaining
+	 */
+	getJSON: function(fn){
+		db.getJSON(fn)
+		return this
+	},
+
+	/**
+	 * Insert a row
+	 * @param  {string}   tblname The table name
+	 * @param  {array}   row     An array of values. Make sure the index's match
+	 * the column index's for this table.
+	 * @param  {Function} fn      Callback
+	 * @return {this}           Returns self for chaining
+	 */
 	insert: function(tblname, row, fn){
 
 		db.insert(tblname, row, fn)
@@ -446,6 +558,7 @@ var driver = {
 	 * Update query.
 	 * To update a table name:
 	 *  - db.update('table', {set: ["old_name","new_name"]}, fn)
+	 *  - db.update('row', {table: tblname, data: {where: ["field_1", "val4"], set: ["field_1", "new val"]}}, fn)
 	 * @param  {enum}   what What to update. Possible values are: table, col,
 	 * row
 	 * @param  {mixed}   data Parameters to pass for update. See method
@@ -471,6 +584,14 @@ var driver = {
 		return this
 	},
 
+	/**
+	 * Query database for results
+	 * @param  {string}   tblname The table name
+	 * @param  {array}   query   An array of where objects in the form:
+	 * [{where: ["col_name", "value"]},{where: ["col2_name", "value2"]}]
+	 * @param  {Function} fn      Callback
+	 * @return {this}           Returns self for chaining
+	 */
 	query: function(tblname, query, fn){
 
 		db.query(tblname, query, fn)
