@@ -14,7 +14,7 @@ Usage
 =====
 ```
 var db = require('jsondb')
-db.connect('my_database_name')
+db.connect('my_database_name', fn)
 ```
 
 Setup
