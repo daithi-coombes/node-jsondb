@@ -4,10 +4,7 @@ var async = require('async'),
 	fs = require('fs'),
 	events = require('events'),
 	util = require('util'),
-	flags = {
-		CONNECTING: null,
-		DELETING_DB: null
-	}
+	DB_WRITE = 1
 
 /**
  * database class
@@ -20,6 +17,7 @@ var DB = function jsondb(){
 	//@public
 	this.dbname = null
 	this.database = null
+	this.state = 0
 	this.storage = '.'
 	this.handle = null
 
@@ -46,7 +44,6 @@ var DB = function jsondb(){
 	 */
 	this.connect = function(dbname, fn){
 
-		flags.CONNECTING = true
 		self.dbname = dbname
 		self.database = getDBLocation(this.dbname)
 
@@ -63,8 +60,10 @@ var DB = function jsondb(){
 			var str = JSON.stringify(json, null, 4)
 			fs.writeFileSync(self.database, str)
 
-		}else
-			json = require(self.database)
+		}else{
+			data = fs.readFileSync(self.database)
+			json = JSON.parse(data)
+		}
 		
 		if(fn)
 			fn(json)
@@ -80,27 +79,49 @@ var DB = function jsondb(){
 	 */
 	this.create_col = function(tblname, new_col, fn){
 
-		self.getJSON(function(j){
-			var cols = j.tables[tblname].cols
-			//if field exists return
-			if(~cols.indexOf(new_col))
-				return this
-			else{
+		var _tblname = tblname
 
-				//if cols is empty
-				if(cols.length==0){
-					if(typeof(new_col)=='string')
-						cols = [new_col]
-					else
-						cols = new_col
+		//@private createCol
+		function createCol(){
+			self.getJSON(function(j){
+
+				if(!j.tables[_tblname]){
+					console.trace()
 				}
-				else
-					cols = cols.concat(new_col)
-			}
-			j.tables[tblname].cols = cols
+				var cols = j.tables[tblname].cols
 
-			self.setJSON(j, fn)
-		})
+				//if field exists return
+				if(~cols.indexOf(new_col)){
+					self.error('col: '+new_col+' already exists')
+					return this
+				}
+				else{
+
+					//if cols is empty
+					if(cols.length==0){
+						if(typeof(new_col)=='string')
+							cols = [new_col]
+						else
+							cols = new_col
+					}
+					else
+						cols = cols.concat(new_col)
+				}
+				j.tables[tblname].cols = cols
+
+				self.setJSON(j, fn)
+			})
+		}
+
+		//if self.state is locked
+		if(self.state==DB_WRITE)
+			self.on('db_set', createCol)
+		//if not locked, lock
+		else{
+			self.state = DB_WRITE
+			createCol()
+		}
+
 		return this
 	}
 
@@ -111,11 +132,30 @@ var DB = function jsondb(){
 	 */
 	this.create_table = function(tblname, fn){
 
-		self.getJSON(function(j){
-			j.tables[tblname] = {cols: [], data: []}
+		//@private create table
+		function createTable(){
+			var _this = this
 
-			self.setJSON(j, fn)
-		})
+			self.getJSON(function(j){
+
+				j.tables[tblname] = {cols: [], data: []}
+				self.setJSON(j, function(){
+
+					fn(tblname)
+				})
+			})
+		}
+
+		//if self.state is locked
+		if(self.state==DB_WRITE)
+			self.on('db_set', createTable)
+		
+		//if not locked, lock
+		else{
+			self.state = DB_WRITE
+			createTable()
+		}
+
 		return this
 	}
 
@@ -129,8 +169,6 @@ var DB = function jsondb(){
 		var cb = fn,
 			self = this
 			_db = getDBLocation(dbname)
-
-		flags.DELETING_DB = true
 
 		fs.exists(_db, function(exists){
 
@@ -242,11 +280,26 @@ var DB = function jsondb(){
 	 */
 	this.getJSON = function(fn){
 
-		fs.readFile(self.database, function(err, data){
-			fn(JSON.parse(data))
-		})
+		function readFile(){
+			fs.readFile(self.database, function(err, data){
+				fn(JSON.parse(data))
+			})
+		}
+		readFile()
+		return this
+
+		/*
+		if(self.state==DB_WRITE){
+			self.state=0
+			self.on('db_set', readFile)
+		}
+		else{
+			self.state=DB_WRITE
+			readFile()
+		}
 
 		return self
+		*/
 	}
 
 	/**
@@ -425,8 +478,17 @@ var DB = function jsondb(){
 	this.setJSON = function(json, fn){
 		
 		var _json = JSON.stringify(json, null, 4)
-		fs.writeFile(db.database, _json, {flag: 'w'}, fn)
-		return
+		fs.writeFile(db.database, _json, {flag: 'w'}, function(){
+
+			if(self.state==DB_WRITE){
+				self.state=0
+				self.emit('db_set')
+			}
+
+			fn(json)
+		})
+
+		return this
 	}
 
 }
