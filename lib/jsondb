@@ -4,7 +4,8 @@ var async = require('async'),
 	fs = require('fs'),
 	events = require('events'),
 	util = require('util'),
-	DB_WRITE = 1
+	DB_WRITE = 1,
+	queue = []
 
 /**
  * database class
@@ -45,7 +46,7 @@ var DB = function jsondb(){
 	this.connect = function(dbname, fn){
 
 		self.dbname = dbname
-		self.database = getDBLocation(this.dbname)
+		self.database = self.getDBLocation(this.dbname)
 
 		//check database file
 		var exists = fs.existsSync(self.database),
@@ -68,7 +69,7 @@ var DB = function jsondb(){
 		if(fn)
 			fn(json)
 
-		return this
+		return self
 	}
 
 	/**
@@ -83,10 +84,11 @@ var DB = function jsondb(){
 
 		//@private createCol
 		function createCol(){
+
+			self.state = DB_WRITE
 			self.getJSON(function(j){
 
 				if(!j.tables[_tblname]){
-					console.trace()
 				}
 				var cols = j.tables[tblname].cols
 
@@ -115,7 +117,8 @@ var DB = function jsondb(){
 
 		//if self.state is locked
 		if(self.state==DB_WRITE)
-			self.on('db_set', createCol)
+			queue.push(createCol)
+
 		//if not locked, lock
 		else{
 			self.state = DB_WRITE
@@ -134,8 +137,8 @@ var DB = function jsondb(){
 
 		//@private create table
 		function createTable(){
-			var _this = this
 
+			self.state = DB_WRITE
 			self.getJSON(function(j){
 
 				j.tables[tblname] = {cols: [], data: []}
@@ -148,7 +151,7 @@ var DB = function jsondb(){
 
 		//if self.state is locked
 		if(self.state==DB_WRITE)
-			self.on('db_set', createTable)
+			queue.push(createTable)
 		
 		//if not locked, lock
 		else{
@@ -168,7 +171,7 @@ var DB = function jsondb(){
 
 		var cb = fn,
 			self = this
-			_db = getDBLocation(dbname)
+			_db = self.getDBLocation(dbname)
 
 		fs.exists(_db, function(exists){
 
@@ -271,7 +274,18 @@ var DB = function jsondb(){
 	 */
 	this.error = function(msg){
 
-		throw new Error(msg)
+		throw msg
+	}
+
+	/**
+	 * Get the full path to the a database. Uses current storage
+	 * @private
+	 * @param  {string} dbname Required. Database name
+	 * @return {string}        
+	 */
+	this.getDBLocation = function(dbname){
+
+		return process.cwd()+'/'+db.storage+'/'+dbname+'.json'
 	}
 
 	/**
@@ -279,27 +293,54 @@ var DB = function jsondb(){
 	 * @param  {Function} fn Callback
 	 */
 	this.getJSON = function(fn){
+		
+		fs.readFile(self.database, {encoding: 'utf8'}, function(err, data){
+			
+			try{
+				var j = JSON.parse(data)
+			}
+			catch(e){
+				if(data==undefined)
+					fn(null)
+				else
+					self.error(e)
+			}
 
-		function readFile(){
-			fs.readFile(self.database, function(err, data){
-				fn(JSON.parse(data))
-			})
-		}
-		readFile()
+			try{
+				fn(j)
+			}catch(e){
+				self.error(e)
+			}
+
+			return
+		})
 		return this
+		/**
+		function readFile(){
 
-		/*
-		if(self.state==DB_WRITE){
-			self.state=0
-			self.on('db_set', readFile)
-		}
+
+				if(self.state==DB_WRITE){
+					self.state=0
+				}
+
+				if(queue.length){
+					next = queue.splice(queue.lenght-1, 1)[0]
+					next()
+				}	
+			}
+
+		readFile()
+		return
+
+		//if self.state is locked
+		if(self.state==DB_WRITE)
+			queue.push(readFile)
+		
+		//if not locked, lock
 		else{
-			self.state=DB_WRITE
+			self.state = DB_WRITE
 			readFile()
-		}
-
-		return self
-		*/
+		}*/
 	}
 
 	/**
@@ -310,16 +351,29 @@ var DB = function jsondb(){
 	 */
 	this.insert = function(tblname, row, fn){
 
-		self.getJSON(function(j){
+		function Insert(){
+			self.state = DB_WRITE
+			self.getJSON(function(j){
 
-			//check num of cols matches
-			if( row.length!=j.tables[tblname].cols.length )
-				this.error('Invalid number of cols')
+				//check num of cols matches
+				if( row.length!=j.tables[tblname].cols.length )
+					self.error('Invalid number of cols')
 
-			j.tables[tblname].data.push(row)
-			self.setJSON(j, fn)
+				j.tables[tblname].data.push(row)
+				self.setJSON(j, fn)
 
-		})
+			})
+		}
+
+		//if self.state is locked
+		if(self.state==DB_WRITE)
+			queue.push(Insert)
+		
+		//if not locked, lock
+		else{
+			self.state = DB_WRITE
+			Insert()
+		}
 
 		return this
 	}
@@ -336,6 +390,40 @@ var DB = function jsondb(){
 		if(fn)
 			fn()
 		return this
+	}
+
+	/**
+	 * Update database name
+	 * @param  {string}   new_name The new database name
+	 * @param  {Function} fn       Callback
+	 */
+	this.update_db = function(new_name, fn){
+
+		var oldName = self.database,
+			newName = self.getDBLocation(new_name)
+
+		function updateDB(){
+			fs.rename(oldName, newName, function(){
+
+				self.dbname = new_name
+				self.database = self.getDBLocation(self.dbname)
+
+				if(fn)
+					fn()
+			})
+		}
+
+		//if self.state is locked
+		if(self.state==DB_WRITE)
+			queue.push(updateDB)
+		
+		//if not locked, lock
+		else{
+			self.state = DB_WRITE
+			updateDB()
+		}
+
+		return self
 	}
 
 	/**
@@ -368,23 +456,40 @@ var DB = function jsondb(){
 	 */
 	this.update_row = function(tblname, data, fn){
 
-		self.getJSON(function(j){
+		function UpdateRow(){
 
-			var	table = j.tables[tblname],
-				cols = j.tables[tblname].cols,
-				rows = j.tables[tblname].data,
-				col_where = cols.indexOf(data.where[0]),
-				col_set = cols.indexOf(data.set[0])
+			self.state = DB_WRITE
+			self.getJSON(function(j){
 
-			rows.forEach(function(row, index){
-				if(row[col_where]==data.where[1])
-					rows[index][col_set]=data.set[1]
+				var	table = j.tables[tblname],
+					cols = j.tables[tblname].cols,
+					rows = j.tables[tblname].data,
+					col_where = cols.indexOf(data.where[0]),
+					col_set = cols.indexOf(data.set[0]),
+					updated = false
+
+				rows.forEach(function(row, index){
+					if(row[col_where]==data.where[1]){
+						rows[index][col_set]=data.set[1]
+						var updated = true
+					}
+				})
+
+				j.tables[tblname].data = rows
+
+				self.setJSON(j, fn)
 			})
+		}
 
-			j.tables[tblname].data = rows
-
-			self.setJSON(j, fn)
-		})
+		//if self.state is locked
+		if(self.state==DB_WRITE)
+			queue.push(UpdateRow)
+		
+		//if not locked, lock
+		else{
+			self.state = DB_WRITE
+			UpdateRow()
+		}
 
 		return this
 	}
@@ -417,57 +522,78 @@ var DB = function jsondb(){
 	 * Query the database for a set of results
 	 * @param  {string}   tblname The table name
 	 * @param  {array}   query   An array of where objects
-	 * @param  {Function} fn      Callback
+	 * @param  {Function} fn      Callback. The callback will be passed an 
+	 * array of row objects, with cols as fields.
 	 */
 	this.query = function(tblname, query, fn){
 
-		self.getJSON(function(j){
+		function Query(){
 
-			var	table = j.tables[tblname],
-				cols = table.cols,
-				data = table.data,
-				res = [],
-				queries = []
+			self.state = DB_WRITE
+			self.getJSON(function(j){
 
-			//cast query to array (in single object passed as query arg)
-			Array.isArray(query) ?
-				queries = query :
-				queries = [query] 
+				var	table = j.tables[tblname],
+					cols = table.cols,
+					data = table.data,
+					res = [],
+					queries = []
+
+				//cast query to array (in single object passed as query arg)
+				Array.isArray(query) ?
+					queries = query :
+					queries = [query] 
 
 
-			queries.forEach(function(test, index){
-				data.forEach(function(row, i){
+				queries.forEach(function(test, index){
+					data.forEach(function(row, i){
 
-					col = cols.indexOf(test.where[0])
+						col = cols.indexOf(test.where[0])
 
-					if(col<0)
-						self.error('Unkown col: '+test.where[0])
+						if(col<0)
+							self.error('Unkown col: '+test.where[0])
 
-					if(row[col]==test.where[1]){
-						r = {}
-						cols.forEach(function(c, x){
-							r[c] = row[x]
-						})
-						res.push(r)
-					}
+						if(row[col]==test.where[1]){
+							r = {}
+							cols.forEach(function(c, x){
+								r[c] = row[x]
+							})
+							res.push(r)
+						}
+					})
 				})
-			})
 
-			fn(res)
-		})
+				if(!res.length)
+					res = null
+
+				if(self.state==DB_WRITE){
+					self.state=0
+				}
+
+				if(queue.length){
+					next = queue.splice(queue.lenght-1, 1)[0]
+					next()
+				}
+
+				if(fn){
+					fn(res)
+				}
+			})
+		}
+
+		//Query()
+		//return
+
+		//if self.state is locked
+		if(self.state==DB_WRITE)
+			queue.push(Query)
+		
+		//if not locked, lock
+		else{
+			self.state = DB_WRITE
+			Query()
+		}
 
 		return this
-	}
-
-	/**
-	 * Get the full path to the a database. Uses current storage
-	 * @private
-	 * @param  {string} dbname Required. Database name
-	 * @return {string}        
-	 */
-	function getDBLocation(dbname){
-
-		return process.cwd()+'/'+db.storage+'/'+dbname+'.json'
 	}
 
 	/**
@@ -478,14 +604,19 @@ var DB = function jsondb(){
 	this.setJSON = function(json, fn){
 		
 		var _json = JSON.stringify(json, null, 4)
-		fs.writeFile(db.database, _json, {flag: 'w'}, function(){
+		fs.writeFile(db.database, _json, {flag: 'w', encoding: 'utf8'}, function(){
 
 			if(self.state==DB_WRITE){
 				self.state=0
-				self.emit('db_set')
 			}
 
-			fn(json)
+			if(queue.length){
+				next = queue.splice(queue.lenght-1, 1)[0]
+				next()
+			}
+
+			if(fn)
+				fn(json)
 		})
 
 		return this
@@ -494,7 +625,6 @@ var DB = function jsondb(){
 }
 util.inherits(DB, events.EventEmitter)
 var db = new DB()
-var queue = []
 
 /**
  * driver
@@ -609,6 +739,10 @@ var driver = {
 		return db
 	},
 
+	getFile: function(){
+		
+	},
+
 	/**
 	 * Returns JSON parsed database
 	 * @param  {Function} fn Callback
@@ -636,6 +770,7 @@ var driver = {
 	/**
 	 * Update query.
 	 * To update a table name:
+	 *  - db.update('database', 'new_name', fn)
 	 *  - db.update('table', {set: ["old_name","new_name"]}, fn)
 	 *  - db.update('row', {table: tblname, data: {where: ["field_1", "val4"], set: ["field_1", "new val"]}}, fn)
 	 *  - db.update('col', {table: tblname, set: ["foo_col", "new_col"]}, fn)
@@ -650,13 +785,17 @@ var driver = {
 		
 		switch(what){
 
+			case 'database':
+				db.update_db(data, fn)
+				break
+
 			case 'col':
 				db.update_col(data.table, data.set, fn)
-				break;
+				break
 
 			case 'row':
 				db.update_row(data.table, data.data, fn)
-				break;
+				break
 
 			case 'table':
 				db.update_table(data, fn)
@@ -668,7 +807,8 @@ var driver = {
 	 * Query database for results
 	 * @param  {string}   tblname The table name
 	 * @param  {array}   query   An array of where objects in the form:
-	 * [{where: ["col_name", "value"]},{where: ["col2_name", "value2"]}]
+	 * [{where: ["col_name", "value"]},{where: ["col2_name", "value2"]}], pass
+	 * null to return the whole table
 	 * @param  {Function} fn      Callback
 	 * @return {this}           Returns self for chaining
 	 */
