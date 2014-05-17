@@ -1,5 +1,5 @@
 {
-	"name": "node-jsondb",
+	"name": "jsondb",
 	"version": "0.0.1-alpha",
 	"description": "An, extremely, light and portable CRUD json based database",
 	"main": "lib/jsondb",
