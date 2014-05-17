@@ -135,8 +135,11 @@ var DB = function jsondb(){
 	 */
 	this.create_table = function(tblname, fn){
 
+		console.log(queue, self.state)
+
 		//@private create table
 		function createTable(){
+
 
 			self.state = DB_WRITE
 			self.getJSON(function(j){
@@ -159,7 +162,7 @@ var DB = function jsondb(){
 			createTable()
 		}
 
-		return this
+		return self
 	}
 
 	/**
