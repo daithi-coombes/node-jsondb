@@ -1,0 +1,354 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"upd",
+				"updateDB"
+			],
+			[
+				"type",
+				"typeof"
+			],
+			[
+				"conn",
+				"connections_test"
+			],
+			[
+				"non_profi",
+				"non_profit_week"
+			],
+			[
+				"direct",
+				"director-slider"
+			],
+			[
+				"reader-",
+				"reader-slider"
+			],
+			[
+				"blk",
+				"blk_price"
+			],
+			[
+				"meta",
+				"meta_keys"
+			],
+			[
+				"obj",
+				"obj2"
+			],
+			[
+				"deac",
+				"deactive"
+			],
+			[
+				"acti",
+				"active"
+			],
+			[
+				"servi",
+				"services"
+			],
+			[
+				"do_call",
+				"do_callback_foo"
+			],
+			[
+				"func_get_",
+				"func_get_args"
+			],
+			[
+				"call_user",
+				"call_user_func"
+			],
+			[
+				"http_b",
+				"http_build_query"
+			],
+			[
+				"get_lo",
+				"get_login_url"
+			],
+			[
+				"debug",
+				"debug_print_backtrace"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "tests/lib/jsondbTest.js",
+			"settings":
+			{
+				"buffer_size": 6051,
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "Packages/Makefile/Make.sublime-build",
+	"command_palette":
+	{
+		"height": 306.0,
+		"selected_items":
+		[
+			[
+				"Package Control: ",
+				"Package Control: Upgrade Package"
+			]
+		],
+		"width": 467.0
+	},
+	"console":
+	{
+		"height": 125.0
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/home/daithi/&",
+		"/var/www/node-jsondb/package.json",
+		"/var/www/node-jsondb/Makefile",
+		"/var/www/node-jsondb/tests/lib/jsondbTest.js",
+		"/var/www/node-jsondb/lib/jsondb",
+		"/var/www/node-jsondb/README.md",
+		"/var/www/node-jsondb/one-liner-wiki.md",
+		"/var/www/node-jsondb/ROADMAP.md",
+		"/var/www/cityindex.loc/logsearch-flowdock-bot/lib/jsondb",
+		"/home/daithi/Dropbox/Anarcho Republican/Anarchism and Other Essays, by Emma Goldman.html",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/autoflow/index.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/autoflow/lib/class.autoflow.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/tests/lib/test-class-api-con-error.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/tests/lib/test-class-api-con-dto.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/tests/lib/test-class-api-con-dash-service.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/phpunit.xml",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/tests/bootstrap.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/lib/class-api-con-service.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/lib/class-api-con-manager.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/tests/lib/test-class-api-con-manager.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/lib/class-api-con-dto.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/vendor/OAuth.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/tests/lib/test-class-api-con-service.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/lib/class-api-con-dash-service.php",
+		"/var/www/future-divination.loc/public_html/wp-content/plugins/futurediv/foo/index.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/build.xml",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/tests/lib/test-class-api-con-model.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/tests/lib/test-class-api-con-view.php",
+		"/var/www/api-connection-manager.loc/public_html/unit-tests/tests/http/base.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/lib/class-api-con-error.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/lib/class-api-con-model.php",
+		"/var/www/api-connection-manager.loc/public_html/unit-tests/wp-tests-config.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/tests.old/bootstrap.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/modules/class-facebook.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/index.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/autoflow/tests/bootstrap.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-includes/option.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/autoflow/tests/lib/test-class.autoflow.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/foo/index.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/index.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/autoflow/build.xml",
+		"/var/www/api-connection-manager.loc/public_html/wp-config.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/autoflow/tests/config.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/lib/class-api-con-view.php",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/api-connection-manager.sublime-workspace",
+		"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/bin/install-wp-tests.sh",
+		"/var/www/future-divination.loc/public_html/mibew/libs/common.php",
+		"/var/www/future-divination.loc/public_html/wp-content/plugins/futurediv-chat/lib/FutureDiv/class-chat.php",
+		"/var/www/future-divination.loc/public_html/wp-content/plugins/futurediv-chat/lib/FutureDiv/Chat/class-dash.php",
+		"/var/www/future-divination.loc/public_html/wp-content/plugins/futurediv-chat/lib/FutureDiv/Chat/class-dash-iframe.php",
+		"/var/www/future-divination.loc/public_html/mibew/view/login.php",
+		"/var/www/future-divination.loc/public_html/wp-content/plugins/futurediv/lib/FutureDiv/class-futurediv.php",
+		"/var/www/future-divination.loc/public_html/mibew/libs/operator.php",
+		"/var/www/future-divination.loc/public_html/mibew/operator/login.php",
+		"/var/www/future-divination.loc/public_html/wp-content/plugins/futurediv/index.php",
+		"/var/www/future-divination.loc/public_html/wp-content/plugins/futurediv-chat/index.php"
+	],
+	"find":
+	{
+		"height": 35.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+			"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager",
+			"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/tests/lib",
+			"/var/www/api-connection-manager.loc/public_html/unit-tests/tests",
+			"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/tests/lib",
+			"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager/lib",
+			"/var/www/api-connection-manager.loc/public_html/wp-content/plugins/api-connection-manager"
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"updateDB",
+			"getDBLocation",
+			"console",
+			"queue",
+			"http://www.gutenberg.org/files/2162/2162-h/2162-h.htm",
+			"bio",
+			"david-coombes",
+			"application id",
+			"@group foo",
+			"foo",
+			"year",
+			"profit",
+			"week",
+			"price_per_block",
+			"\"number\"",
+			"type=\"text\"",
+			"text",
+			"wp_remote_get",
+			"group foo",
+			"var_dump",
+			"set_service_states",
+			"connect_user",
+			"user_connections",
+			"get_token",
+			"var_dump",
+			"process_bulk_action",
+			"var_dump",
+			"is_valid_service_name",
+			"display(",
+			"API_Con_Model::get( 'services' );",
+			"API_Con_Model::get( 'services' )",
+			"services",
+			"service",
+			"service_options",
+			"API_Con_Model::get( 'service_options' );",
+			"API_Con_Model::get( 'service_options' )",
+			"options",
+			"Login to Facebook",
+			"app",
+			"application/modules",
+			"/\" ",
+			"application/modules/\"",
+			"application/modules/",
+			"api",
+			"var_dump",
+			"var_d",
+			"var_dump",
+			"		\n"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "tests/lib/jsondbTest.js",
+					"settings":
+					{
+						"buffer_size": 6051,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								734,
+								734
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 423.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 0.0
+	},
+	"input":
+	{
+		"height": 31.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"replace":
+	{
+		"height": 0.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"show_minimap": true,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 224.0,
+	"status_bar_visible": true
+}

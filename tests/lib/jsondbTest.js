@@ -1,7 +1,6 @@
 
 var assert = require('assert'),
 	fs = require('fs'),
-	rewire = require('rewire'),
 	database,
 	db,
 	dbname,

@@ -1,4 +1,4 @@
-REPORTER = dot
+REPORTER = spec
 
 test:
 	@npm install

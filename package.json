@@ -1,18 +1,36 @@
 {
-	"name" : "jsondb",
-	"version" : "0.0.1-alpha",
-	"description" : "An, extremely, light and portable CRUD json based database",
-	"repository" : {
-		"type" : "git",
-		"url" : "http://github.com/daithi-coombes/node-jsondb"
-	},
-	"engines": {
-		"node": "0.10.x",
-		"npm":  "1.2.x"
+	"name": "node-jsondb",
+	"version": "0.0.1-alpha",
+	"description": "An, extremely, light and portable CRUD json based database",
+	"main": "lib/jsondb",
+	"directories": {
+		"test": "tests"
 	},
 	"dependencies": {
-		"async" : "*",
-		"mocha": "*",
-		"rewire": "*"
-	}
+		"async": "~0.2.9",
+		"events": "~1.0.0",
+		"rewire": "~2.0.0",
+		"util": "~0.10.2"
+	},
+	"devDependencies": {
+		"mocha": "~1.16.2"
+	},
+	"scripts": {
+		"test": "make"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/daithi-coombes/node-jsondb.git"
+	},
+	"keywords": [
+		"json",
+		"database",
+		"crud"
+	],
+	"author": "Daithi Coombes",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/daithi-coombes/node-jsondb/issues"
+	},
+	"homepage": "https://github.com/daithi-coombes/node-jsondb"
 }
