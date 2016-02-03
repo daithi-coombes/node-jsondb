@@ -1,36 +1,38 @@
 {
-	"name": "daithi-jsondb",
-	"version": "0.0.3-alpha",
-	"description": "An, extremely, light and portable CRUD json based database",
-	"main": "lib/jsondb",
-	"directories": {
-		"test": "tests"
-	},
-	"dependencies": {
-		"async": "~0.2.9",
-		"events": "~1.0.0",
-		"rewire": "~2.0.0",
-		"util": "~0.10.2"
-	},
-	"devDependencies": {
-		"mocha": "~1.16.2"
-	},
-	"scripts": {
-		"test": "make"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git://github.com/daithi-coombes/node-jsondb.git"
-	},
-	"keywords": [
-		"json",
-		"database",
-		"crud"
-	],
-	"author": "Daithi Coombes",
-	"license": "ISC",
-	"bugs": {
-		"url": "https://github.com/daithi-coombes/node-jsondb/issues"
-	},
-	"homepage": "https://github.com/daithi-coombes/node-jsondb"
+  "name": "daithi-jsondb",
+  "version": "0.0.3-alpha",
+  "description": "An, extremely, light and portable CRUD json based database",
+  "main": "lib/jsondb",
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {
+    "async": "~0.2.9",
+    "events": "~1.0.0",
+    "istanbul": "^0.4.2",
+    "mocha-istanbul": "^0.2.0",
+    "rewire": "~2.0.0",
+    "util": "~0.10.2"
+  },
+  "devDependencies": {
+    "mocha": "~1.16.2"
+  },
+  "scripts": {
+    "test": "make"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/daithi-coombes/node-jsondb.git"
+  },
+  "keywords": [
+    "json",
+    "database",
+    "crud"
+  ],
+  "author": "Daithi Coombes",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/daithi-coombes/node-jsondb/issues"
+  },
+  "homepage": "https://github.com/daithi-coombes/node-jsondb"
 }
