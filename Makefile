@@ -39,4 +39,16 @@ clean-coverage:
     -rm -rf $(INSTRUMENTATION_OUTPUT)
     -rm -rf $(REPORTS)
 
+lint-report:
+    $(BIN)/jshint --config $(JSHINT_CONFIG) \
+        --jslint-reporter \
+        $(SRC_FILES) \
+        > reports/jslint.xml || true
+
+style-report:
+    $(BIN)/jshint --config $(JSHINT_CONFIG) \
+        --checkstyle-reporter \
+        $(SRC_FILES) \
+        > reports/checkstyle-jshint.xml || true
+
 .PHONY: test test-w
